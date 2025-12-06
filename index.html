@@ -4,25 +4,41 @@
   <link rel="icon" type="image/jpg" href="favicon.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>  
-    <h1 class="text-4xl font-extrabold text-purple-500 text-center mt-5">
-  Vishnu & Sushen's Website
-</h1>
-    <h1>Hello from Vishnu & Sushen!</h1>
-  <p>This is our first website.</p>
+<body class="min-h-screen bg-gradient-to-b from-black via-slate-900 to-black text-white">
+  <div class="max-w-3xl mx-auto px-4 py-10 flex flex-col items-center text-center gap-6">
 
+    <!-- Top text logo -->
+    <h1 class="text-4xl md:text-5xl font-extrabold text-purple-400 drop-shadow-[0_0_15px_rgba(192,132,252,0.8)]">
+      Vishnu &amp; Sushen's Website
+    </h1>
 
+    <!-- Neon logo image (optional) -->
+    <!-- if your file is logo.png change the src below -->
+    <img src="Logo.png" alt="V × S Logo"
+         class="w-32 h-32 rounded-full border-2 border-purple-400 shadow-[0_0_25px_rgba(96,165,250,0.9)] object-cover">
 
+    <!-- Intro text -->
+    <div class="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 backdrop-blur">
+      <h2 class="text-2xl font-bold text-cyan-300 mb-2">Hello from Vishnu &amp; Sushen!</h2>
+      <p class="text-slate-200">
+        This is our first website. We&apos;are building something cool together using GitHub, VS Code and Tailwind.
+      </p>
+    </div>
 
+    <!-- Buttons -->
+    <div class="flex flex-wrap gap-4 justify-center">
+      <a href="#"
+         class="px-6 py-3 rounded-full bg-purple-500 hover:bg-purple-400 text-white font-semibold
+                shadow-[0_0_20px_rgba(168,85,247,0.9)] transition">
+        Enter Site
+      </a>
+      <a href="#"
+         class="px-6 py-3 rounded-full border border-cyan-400 text-cyan-300 font-semibold
+                hover:bg-cyan-400/10 transition">
+        About Us
+      </a>
+    </div>
 
-
-
-
-
-
-
-
-
-
+  </div>
 </body>
 </html>
