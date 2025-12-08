@@ -19,7 +19,6 @@
       width: 500px;
       height: 500px;
       border: 4px solid #2563eb;
-
       background-image: url("snake-board.png");
       background-size: cover;
       background-position: center;
@@ -46,15 +45,14 @@
     }
 
     .dot.p1 { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.9); }
-    .dot.p2 { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.9); } /* light blue */
+    .dot.p2 { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.9); }
     .dot.p3 { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.9); }
     .dot.p4 { background: #eab308; box-shadow: 0 0 10px rgba(234,179,8,0.9); }
 
-    /* Climb / slide animations */
+    /* climb / slide animation */
     .dot.climb {
       animation: climbAnim 0.25s infinite alternate;
     }
-
     .dot.slide {
       animation: slideAnim 0.25s infinite alternate;
     }
@@ -69,25 +67,20 @@
       100% { transform: translate(-50%, -50%) rotate(6deg); }
     }
 
-    /* ===== DICE LOOK + ANIMATION (styled like a real dice block) ===== */
-    #diceValue {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 46px;
-      height: 46px;
+    /* ===== DICE (image + animation) ===== */
+    #diceFace {
+      width: 50px;
+      height: 50px;
       border-radius: 0.9rem;
       border: 2px solid #eab308;
-      background: radial-gradient(circle at 30% 30%, #1f2937, #020617);
-      color: #facc15;
-      font-size: 1.5rem;
-      font-family: monospace;
+      background-size: cover;
+      background-position: center;
       box-shadow:
         0 0 15px rgba(234,179,8,0.6),
         0 6px 0 rgba(15, 23, 42, 1);
     }
 
-    #diceValue.animate {
+    #diceWrapper.animate {
       animation: diceShake 0.4s linear infinite;
     }
 
@@ -205,7 +198,10 @@
 
         <div class="flex items-center gap-3">
           <span>Dice:</span>
-          <span id="diceValue">-</span>
+          <div id="diceWrapper" class="flex items-center gap-2">
+            <div id="diceFace"></div>
+            <span id="diceValue" class="text-lg font-mono text-amber-300">-</span>
+          </div>
         </div>
 
         <div class="flex gap-3 items-center mt-2">
@@ -234,7 +230,7 @@
          class="text-4xl md:text-5xl font-extrabold text-yellow-300 drop-shadow-lg mb-4">
       </p>
       <p class="text-sm md:text-lg text-slate-100">
-        Tap anywhere to close and play again.
+        Click anywhere to play again.
       </p>
     </div>
   </div>
@@ -245,7 +241,6 @@
     const boardElement = document.getElementById("board");
     const cells = {};
 
-    // Ladders: bottom -> top (from your image)
     const ladders = {
       4: 25,
       21: 39,
@@ -255,7 +250,6 @@
       71: 89
     };
 
-    // Snakes: head -> tail (from your image, + 82 -> 59)
     const snakes = {
       98: 55,
       92: 75,
@@ -268,7 +262,6 @@
 
     function buildBoard() {
       boardElement.innerHTML = "";
-
       for (let n = 1; n <= 100; n++) {
         const cell = document.createElement("div");
         cell.className = "cell";
@@ -276,11 +269,10 @@
 
         const rowFromBottom = Math.floor((n - 1) / 10); // 0..9
         const colInRow = (n - 1) % 10;
-        const isReverse = rowFromBottom % 2 === 1;      // every 2nd row flips
+        const isReverse = rowFromBottom % 2 === 1;
 
         const col = isReverse ? 9 - colInRow : colInRow;
-
-        const gridRow = 10 - rowFromBottom; // bottom row = 10
+        const gridRow = 10 - rowFromBottom;
         const gridCol = col + 1;
 
         cell.style.gridRow = gridRow;
@@ -294,15 +286,12 @@
     buildBoard();
 
     /* ===== 2. GAME STATE ===== */
-
     let players = [];
     let currentPlayerIndex = 0;
     let gameOver = false;
     let isAnimating = false;
-
-    // for climb/slide animation
     let activeAnimPlayer = null;
-    let activeAnimType = null; // "ladder" | "snake" | null
+    let activeAnimType = null;
 
     /* ===== 3. DOM ELEMENTS ===== */
 
@@ -321,7 +310,9 @@
     const setupInfoEl    = document.getElementById("setupInfo");
 
     const turnTextEl   = document.getElementById("turnText");
-    const diceEl       = document.getElementById("diceValue");
+    const diceWrapper  = document.getElementById("diceWrapper");
+    const diceFace     = document.getElementById("diceFace");
+    const diceValueEl  = document.getElementById("diceValue");
     const playerListEl = document.getElementById("playerList");
     const rollBtn      = document.getElementById("rollBtn");
     const resetBtn     = document.getElementById("resetBtn");
@@ -330,7 +321,15 @@
     const winnerOverlay = document.getElementById("winnerOverlay");
     const winnerText    = document.getElementById("winnerText");
 
-    /* ===== 4. SHOW ONLY NEEDED NAME BOXES ===== */
+    /* ===== helper: dice image ===== */
+    function setDiceFace(v) {
+      diceFace.style.backgroundImage = `url("dice-${v}.png")`;
+      diceValueEl.textContent = v;
+    }
+
+    setDiceFace(1);
+
+    /* ===== 4. NAME FIELDS SHOW/HIDE ===== */
 
     function updateNameRows() {
       const count = Number(playerCountSel.value);
@@ -343,7 +342,7 @@
     playerCountSel.addEventListener("change", updateNameRows);
     updateNameRows();
 
-    /* ===== 5. RENDER PLAYER LIST ===== */
+    /* ===== 5. PLAYER LIST ===== */
 
     function renderPlayerList() {
       playerListEl.innerHTML = "";
@@ -392,22 +391,18 @@
       renderPlayerList();
     }
 
-    /* ===== 7. START GAME (names mandatory) ===== */
+    /* ===== 7. START GAME ===== */
 
     startBtn.onclick = function () {
       const count = Number(playerCountSel.value);
-
       const rawNames = [
         p1NameInput.value.trim(),
         p2NameInput.value.trim(),
         p3NameInput.value.trim(),
         p4NameInput.value.trim()
       ];
-
-      const requiredNames = rawNames.slice(0, count);
-      const missing = requiredNames.some(n => n === "");
-
-      if (missing) {
+      const needed = rawNames.slice(0, count);
+      if (needed.some(n => !n)) {
         setupInfoEl.textContent = "Giving name is mandatory.";
         setupInfoEl.classList.remove("text-slate-300");
         setupInfoEl.classList.add("text-red-400");
@@ -419,9 +414,8 @@
 
       const colors = ["p1", "p2", "p3", "p4"];
       players = [];
-
       for (let i = 0; i < count; i++) {
-        players.push({ name: requiredNames[i], pos: 1, color: colors[i] });
+        players.push({ name: needed[i], pos: 1, color: colors[i] });
       }
 
       currentPlayerIndex = 0;
@@ -429,12 +423,10 @@
       isAnimating = false;
       activeAnimPlayer = null;
       activeAnimType = null;
-
-      diceEl.textContent = "-";
+      setDiceFace(1);
       messageEl.textContent = "";
       rollBtn.disabled = false;
       setupInfoEl.textContent = "Game started!";
-
       winnerOverlay.classList.add("hidden");
 
       updateBoardTokens();
@@ -452,22 +444,22 @@
     /* ===== 8. DICE ANIMATION ===== */
 
     function animateDice(finalValue, callback) {
-      diceEl.classList.add("animate");
+      diceWrapper.classList.add("animate");
       let count = 0;
-
       const interval = setInterval(() => {
-        diceEl.textContent = Math.floor(Math.random() * 6) + 1;
+        const v = Math.floor(Math.random() * 6) + 1;
+        setDiceFace(v);
         count++;
         if (count >= 7) {
           clearInterval(interval);
-          diceEl.classList.remove("animate");
-          diceEl.textContent = finalValue;
+          diceWrapper.classList.remove("animate");
+          setDiceFace(finalValue);
           callback();
         }
       }, 80);
     }
 
-    /* ===== 9. WINNER CELEBRATION ===== */
+    /* ===== 9. WINNER OVERLAY ===== */
 
     function showWinner(name) {
       winnerText.textContent = `${name} WINS! 🎉`;
@@ -580,7 +572,7 @@
       isAnimating = false;
       activeAnimPlayer = null;
       activeAnimType = null;
-      diceEl.textContent = "-";
+      setDiceFace(1);
       messageEl.textContent = "";
       rollBtn.disabled = players.length === 0;
       winnerOverlay.classList.add("hidden");
