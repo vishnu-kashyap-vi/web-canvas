@@ -597,32 +597,38 @@
 
     
     
-    function smoothMoveToPosition(player, startPos, endPos, duration) {
+    // Animate a floating token across the board (pixel-based) and place it in the destination cell.
+    function animateFloatingToken(player, fromCell, toCell, duration, animClass) {
       return new Promise((resolve) => {
-        const start = performance.now();
-        
-        function animate(now) {
-          const elapsed = now - start;
-          const progress = Math.min(elapsed / duration, 1);
-          
-          // Smooth easing: ease-in-out
-          const easeProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
-          
-          // Interpolate position smoothly
-          const currentPos = startPos + (endPos - startPos) * easeProgress;
-          player.pos = currentPos;
-          updateBoardTokens();
-          
-          if (progress < 1) {
-            requestAnimationFrame(animate);
-          } else {
-            player.pos = Math.round(endPos);
-            updateBoardTokens();
-            resolve();
-          }
-        }
-        
-        requestAnimationFrame(animate);
+        const boardRect = boardElement.getBoundingClientRect();
+
+        const from = getCellCoords(fromCell);
+        const to = getCellCoords(toCell);
+
+        // Create floating token
+        const floatDot = document.createElement('div');
+        floatDot.className = 'dot ' + player.color + (animClass ? ' ' + animClass : '');
+        floatDot.style.position = 'fixed';
+        floatDot.style.left = (boardRect.left + from.x - 9) + 'px';
+        floatDot.style.top = (boardRect.top + from.y - 9) + 'px';
+        floatDot.style.transition = `transform ${duration}ms cubic-bezier(.22,.9,.35,1)`;
+        floatDot.style.transform = 'translateZ(0)';
+        document.body.appendChild(floatDot);
+
+        // Force reflow then animate using transform to target
+        requestAnimationFrame(() => {
+          const targetX = boardRect.left + to.x - 9;
+          const targetY = boardRect.top + to.y - 9;
+          const dx = targetX - (boardRect.left + from.x - 9);
+          const dy = targetY - (boardRect.top + from.y - 9);
+          floatDot.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+
+        // Cleanup after duration
+        setTimeout(() => {
+          floatDot.remove();
+          resolve();
+        }, duration + 20);
       });
     }
 
@@ -648,26 +654,29 @@
         finalPos = snakes[target];
       }
 
-      // Smooth move from start to dice roll position
-      const diceRollDuration = diceValue * 250; // 250ms per step
-      await smoothMoveToPosition(player, start, target, diceRollDuration);
+      // Phase 1: animate from start cell to target cell (dice roll)
+      const diceRollDuration = Math.max(200, diceValue * 180); // ms
+      await animateFloatingToken(player, Math.round(start), target, diceRollDuration, null);
 
-      // If there's a ladder or snake, animate the climb/slide
+      // Place player at target for a moment
+      player.pos = target;
+      updateBoardTokens();
+
+      // Phase 2: ladder or snake animation uses animClass for visual effect
       if (viaType) {
         activeAnimPlayer = player;
         activeAnimType = viaType;
         updateBoardTokens();
-        
-        // Smooth animation from target to final position
-        const ladderDuration = Math.abs(finalPos - target) * 200; // 200ms per step
-        await smoothMoveToPosition(player, target, finalPos, ladderDuration);
-        
+
+        const ladderDuration = Math.max(300, Math.abs(finalPos - target) * 160);
+        await animateFloatingToken(player, target, finalPos, ladderDuration, viaType === 'ladder' ? 'climb' : 'slide');
+
         activeAnimPlayer = null;
         activeAnimType = null;
-      }
 
-      player.pos = finalPos;
-      updateBoardTokens();
+        player.pos = finalPos;
+        updateBoardTokens();
+      }
 
       let msg = `${player.name} moved to ${target}. `;
       if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
