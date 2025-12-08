@@ -251,6 +251,18 @@
     </div>
   </div>
 
+  <!-- RESET CONFIRMATION OVERLAY -->
+  <div id="resetOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center">
+    <div class="bg-black/80 rounded-lg p-6 text-center max-w-sm mx-4">
+      <p class="text-lg font-semibold text-white mb-4">Restart game?</p>
+      <p class="text-sm text-slate-300 mb-6">This will reset all player positions. Are you sure?</p>
+      <div class="flex gap-3 justify-center">
+        <button id="confirmReset" class="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-white">Yes, restart</button>
+        <button id="cancelReset" class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-white">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     /* ===== 1. BOARD + SNAKE / LADDER DATA ===== */
 
@@ -376,7 +388,6 @@
             <span class="inline-block w-2 h-2 rounded-full mr-1 ${colorClass}"></span>
             ${p.name}
           </p>
-          <p class="text-[11px]">Position: ${p.pos}</p>
         `;
         playerListEl.appendChild(div);
       });
@@ -491,6 +502,9 @@
       setupInfoEl.textContent = "Game started!";
       winnerOverlay.classList.add("hidden");
 
+      // lock player count once the game has started
+      playerCountSel.disabled = true;
+
       updateBoardTokens();
       updateTurnText();
     };
@@ -530,6 +544,37 @@
 
     winnerOverlay.addEventListener("click", () => {
       winnerOverlay.classList.add("hidden");
+    });
+
+    // Reset confirmation overlay elements
+    const resetOverlay = document.getElementById("resetOverlay");
+    const confirmResetBtn = document.getElementById("confirmReset");
+    const cancelResetBtn = document.getElementById("cancelReset");
+
+    function doReset() {
+      players.forEach(p => p.pos = 1);
+      currentPlayerIndex = 0;
+      gameOver = false;
+      isAnimating = false;
+      activeAnimPlayer = null;
+      activeAnimType = null;
+      setDiceFace(1);
+      messageEl.textContent = "";
+      rollBtn.disabled = players.length === 0;
+      winnerOverlay.classList.add("hidden");
+      resetOverlay.classList.add("hidden");
+      // Re-enable changing number of players after reset
+      playerCountSel.disabled = false;
+      updateBoardTokens();
+      updateTurnText();
+    }
+
+    confirmResetBtn.addEventListener('click', () => {
+      doReset();
+    });
+
+    cancelResetBtn.addEventListener('click', () => {
+      resetOverlay.classList.add('hidden');
     });
 
     /* ===== 10. MOVE ANIMATION ===== */
@@ -661,18 +706,8 @@
     /* ===== 12. RESET ===== */
 
     resetBtn.onclick = function () {
-      players.forEach(p => p.pos = 1);
-      currentPlayerIndex = 0;
-      gameOver = false;
-      isAnimating = false;
-      activeAnimPlayer = null;
-      activeAnimType = null;
-      setDiceFace(1);
-      messageEl.textContent = "";
-      rollBtn.disabled = players.length === 0;
-      winnerOverlay.classList.add("hidden");
-      updateBoardTokens();
-      updateTurnText();
+      // Show confirmation overlay before resetting
+      resetOverlay.classList.remove('hidden');
     };
   </script>
 </body>
