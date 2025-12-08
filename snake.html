@@ -3,92 +3,92 @@
 <head>
   <title>Snake & Ladder | V × S</title>
   <meta charset="UTF-8">
-  <link rel="icon" type="image/jpg" href="favicon.jpg">
+  <link rel="icon" type="image/png" href="snake-board.png">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* ==== BOARD LOOK ==== */
+    /* ===== BOARD (uses your image) ===== */
     .board {
       display: grid;
-      grid-template-columns: repeat(10, 40px);
-      grid-template-rows: repeat(10, 40px);
-      border: 4px solid #f97373;
-      background: radial-gradient(circle at top left, #1e293b 0, #020617 60%);
+      grid-template-columns: repeat(10, 50px);
+      grid-template-rows: repeat(10, 50px);
+      width: 500px;
+      height: 500px;
+      border: 4px solid #2563eb;
+
+      background-image: url("snake-board.png"); /* <-- your image */
+      background-size: cover;
+      background-position: center;
     }
 
+    /* Cells are invisible but used for logic/positions */
     .cell {
-      width: 40px;
-      height: 40px;
-      font-size: 10px;
-      color: #e5e5e5;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      border: 1px solid rgba(148, 163, 184, 0.4);
+      width: 50px;
+      height: 50px;
+      font-size: 0;          /* hide text */
+      color: transparent;
+      border: 1px solid transparent;
       position: relative;
     }
 
-    .cell:nth-child(odd) {
-      background: rgba(30, 64, 175, 0.35);
-    }
-
-    .cell:nth-child(even) {
-      background: rgba(22, 163, 74, 0.35);
-    }
-
-    /* Pawns (tokens) */
+    /* ===== PLAYER DOTS ===== */
     .dot {
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
       border-radius: 999px;
       position: absolute;
       top: 4px;
-      transition: transform 0.15s linear;
     }
 
-    /* Player colors: red, blue, green, yellow */
     .dot.p1 {
-      left: 3px;
-      background: #ef4444; /* red */
-      box-shadow: 0 0 10px rgba(239, 68, 68, 0.9);
+      left: 4px;
+      background: #ef4444;   /* red */
+      box-shadow: 0 0 10px rgba(239,68,68,0.9);
     }
     .dot.p2 {
-      right: 3px;
-      background: #3b82f6; /* blue */
-      box-shadow: 0 0 10px rgba(59, 130, 246, 0.9);
+      right: 4px;
+      background: #3b82f6;   /* blue */
+      box-shadow: 0 0 10px rgba(59,130,246,0.9);
     }
     .dot.p3 {
-      left: 3px;
-      bottom: 3px;
-      background: #22c55e; /* green */
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.9);
+      left: 4px;
+      bottom: 4px;
+      background: #22c55e;   /* green */
+      box-shadow: 0 0 10px rgba(34,197,94,0.9);
     }
     .dot.p4 {
-      right: 3px;
-      bottom: 3px;
-      background: #eab308; /* yellow */
-      box-shadow: 0 0 10px rgba(234, 179, 8, 0.9);
+      right: 4px;
+      bottom: 4px;
+      background: #eab308;   /* yellow */
+      box-shadow: 0 0 10px rgba(234,179,8,0.9);
     }
 
-    /* Markers for snakes/ladders */
-    .marker {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      font-size: 9px;
-      font-weight: 700;
-    }
-    .snake {
-      color: #f97373;
-    }
-    .ladder {
-      color: #4ade80;
+    /* ===== DICE STYLING + ANIMATION ===== */
+    #diceValue {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 0.75rem;
+      border: 2px solid #eab308;
+      background: #020617;
+      color: #facc15;
+      font-size: 1.4rem;
+      font-family: monospace;
+      box-shadow: 0 0 15px rgba(234,179,8,0.6);
     }
 
-    /* Active player highlight in list */
-    .player-active {
-      border-color: #a855f7;
-      box-shadow: 0 0 12px rgba(168,85,247,0.7);
+    #diceValue.animate {
+      animation: shake 0.4s linear infinite;
+    }
+
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      50% { transform: translateX(3px); }
+      75% { transform: translateX(-3px); }
+      100% { transform: translateX(0); }
     }
   </style>
 </head>
@@ -98,8 +98,8 @@
 
     <!-- LEFT: BOARD -->
     <div class="flex flex-col items-center gap-3">
-      <a href="index.html" class="self-start text-sm text-slate-300 hover:text-purple-300">
-        &larr; Back to Home
+      <a href="games.html" class="self-start text-sm text-slate-300 hover:text-purple-300">
+        &larr; Back to Games
       </a>
 
       <h1 class="text-3xl font-extrabold text-purple-400 drop-shadow-md text-center">
@@ -107,7 +107,7 @@
       </h1>
 
       <p class="text-xs text-slate-300 text-center max-w-xs">
-        2–4 players on one device. Animated pawns, dice, snakes & ladders.
+        2–4 players on one device. Red / Blue / Green / Yellow pawns. Animated dice & movement.
       </p>
 
       <div id="board" class="board"></div>
@@ -131,22 +131,22 @@
 
         <div class="grid grid-cols-2 gap-2 text-xs text-slate-200">
           <label>
-            Player 1 (🔴 red):
+            Player 1 (Red):
             <input id="p1Name" class="mt-1 w-full bg-black/40 border border-red-400/60 rounded px-2 py-1"
                    placeholder="Player 1">
           </label>
           <label>
-            Player 2 (🔵 blue):
+            Player 2 (Blue):
             <input id="p2Name" class="mt-1 w-full bg-black/40 border border-blue-400/60 rounded px-2 py-1"
                    placeholder="Player 2">
           </label>
           <label>
-            Player 3 (🟢 green):
+            Player 3 (Green):
             <input id="p3Name" class="mt-1 w-full bg-black/40 border border-emerald-400/60 rounded px-2 py-1"
                    placeholder="(optional)">
           </label>
           <label>
-            Player 4 (🟡 yellow):
+            Player 4 (Yellow):
             <input id="p4Name" class="mt-1 w-full bg-black/40 border border-yellow-400/60 rounded px-2 py-1"
                    placeholder="(optional)">
           </label>
@@ -161,30 +161,22 @@
         <p id="setupInfo" class="text-[11px] text-slate-300 min-h-[1.3rem]"></p>
       </div>
 
-      <!-- Game panel -->
+      <!-- Game info -->
       <div class="bg-white/5 border border-white/10 rounded-2xl p-5 backdrop-blur flex flex-col gap-3">
         <p id="turnText" class="font-semibold text-purple-300 text-sm">
           Click "Start game" to begin
         </p>
 
         <div id="playerList" class="grid grid-cols-2 gap-3 text-xs">
-          <!-- filled by JS -->
+          <!-- JS fills this -->
         </div>
 
-        <div class="flex items-center gap-4">
-          <p>Dice:
-            <span id="diceValue"
-                  class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-yellow-400
-                         font-mono text-xl bg-black/40 shadow-[0_0_15px_rgba(250,204,21,0.6)]">
-              -
-            </span>
-          </p>
-          <span id="diceAnimHint" class="text-[11px] text-slate-400">
-            Click roll to see dice animation.
-          </span>
+        <div class="flex items-center gap-3">
+          <span>Dice:</span>
+          <span id="diceValue">-</span>
         </div>
 
-        <div class="flex gap-3 items-center">
+        <div class="flex gap-3 items-center mt-2">
           <button id="rollBtn"
                   class="px-5 py-2 rounded-full bg-purple-500 hover:bg-purple-400 text-white font-semibold
                          shadow-[0_0_20px_rgba(168,85,247,0.9)] transition disabled:opacity-40 disabled:cursor-not-allowed"
@@ -200,114 +192,108 @@
         <p id="message" class="text-xs text-slate-200 min-h-[1.5rem]"></p>
       </div>
 
-      <!-- Legend -->
+      <!-- Info -->
       <div class="bg-white/5 border border-white/10 rounded-2xl p-4 text-xs text-slate-300">
-        <p class="font-semibold mb-1 text-red-300">Snakes 🐍</p>
-        <p>99 → 54, 70 → 55, 52 → 42, 25 → 2</p>
-        <p class="font-semibold mt-2 mb-1 text-emerald-300">Ladders 🪜</p>
-        <p>3 → 22, 5 → 8, 11 → 26, 20 → 29</p>
+        <p class="font-semibold mb-1 text-sky-300">How it works</p>
+        <p>Land on the bottom of a ladder → climb up.</p>
+        <p>Land on the head of a snake → slide down to its tail.</p>
       </div>
 
     </div>
   </div>
 
   <script>
-    /* ========== 1. BOARD + SNAKE/LADDER DATA ========== */
+    /* ===== 1. BOARD + SNAKE / LADDER DATA ===== */
 
-    const boardElement = document.getElementById('board');
-    const cells = {};
+    const boardElement = document.getElementById("board");
+    const cells = {}; // cells[1]..cells[100]
 
-    const snakes = {
-      99: 54,
-      70: 55,
-      52: 42,
-      25: 2
-    };
-
+    // Ladders: bottom -> top   (you can change to match your picture exactly)
     const ladders = {
-      3: 22,
-      5: 8,
-      11: 26,
-      20: 29
+      4: 14,
+      9: 31,
+      17: 74,
+      21: 42,
+      28: 84,
+      51: 67,
+      72: 91,
+      80: 99
     };
 
+    // Snakes: head -> tail
+    const snakes = {
+      98: 79,
+      95: 75,
+      93: 73,
+      87: 24,
+      64: 60,
+      62: 19,
+      54: 34,
+      17: 7
+    };
+
+    // Build board: 1–10 bottom row, then 11–20 above, etc.
     function buildBoard() {
       boardElement.innerHTML = "";
-      for (let i = 100; i >= 1; i--) {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.dataset.num = i;
-        cell.textContent = i;
-
-        if (snakes[i]) {
-          const m = document.createElement('span');
-          m.className = 'marker snake';
-          m.textContent = 'S';
-          cell.appendChild(m);
+      for (let row = 9; row >= 0; row--) {   // from bottom row (0) up to 9
+        for (let col = 0; col < 10; col++) {
+          const num = row * 10 + col + 1;   // 1..100
+          const cell = document.createElement("div");
+          cell.className = "cell";
+          cell.dataset.num = num;
+          boardElement.appendChild(cell);
+          cells[num] = cell;
         }
-        if (ladders[i]) {
-          const m = document.createElement('span');
-          m.className = 'marker ladder';
-          m.textContent = 'L';
-          cell.appendChild(m);
-        }
-
-        boardElement.appendChild(cell);
-        cells[i] = cell;
       }
     }
 
     buildBoard();
 
-    /* ========== 2. GAME STATE ========== */
+    /* ===== 2. GAME STATE ===== */
 
-    let players = [];            // { name, pos, color }
+    let players = [];           // { name, pos, color }
     let currentPlayerIndex = 0;
     let gameOver = false;
-    let isAnimating = false;     // prevents spam while moving
+    let isAnimating = false;
 
-    /* ========== 3. DOM ELEMENTS ========== */
+    /* ===== 3. DOM ELEMENTS ===== */
 
-    const playerCountSel = document.getElementById('playerCount');
-    const p1NameInput    = document.getElementById('p1Name');
-    const p2NameInput    = document.getElementById('p2Name');
-    const p3NameInput    = document.getElementById('p3Name');
-    const p4NameInput    = document.getElementById('p4Name');
+    const playerCountSel = document.getElementById("playerCount");
+    const p1NameInput    = document.getElementById("p1Name");
+    const p2NameInput    = document.getElementById("p2Name");
+    const p3NameInput    = document.getElementById("p3Name");
+    const p4NameInput    = document.getElementById("p4Name");
+    const startBtn       = document.getElementById("startBtn");
+    const setupInfoEl    = document.getElementById("setupInfo");
 
-    const startBtn       = document.getElementById('startBtn');
-    const setupInfoEl    = document.getElementById('setupInfo');
+    const turnTextEl   = document.getElementById("turnText");
+    const diceEl       = document.getElementById("diceValue");
+    const playerListEl = document.getElementById("playerList");
+    const rollBtn      = document.getElementById("rollBtn");
+    const resetBtn     = document.getElementById("resetBtn");
+    const messageEl    = document.getElementById("message");
 
-    const turnTextEl     = document.getElementById('turnText');
-    const diceEl         = document.getElementById('diceValue');
-    const diceHintEl     = document.getElementById('diceAnimHint');
-    const playerListEl   = document.getElementById('playerList');
-    const rollBtn        = document.getElementById('rollBtn');
-    const resetBtn       = document.getElementById('resetBtn');
-    const messageEl      = document.getElementById('message');
-
-    /* ========== 4. RENDER PLAYERS LIST ========== */
+    /* ===== 4. RENDER PLAYER LIST ===== */
 
     function renderPlayerList() {
       playerListEl.innerHTML = "";
-      players.forEach((p, index) => {
-        const div = document.createElement('div');
-        const isActive = index === currentPlayerIndex && !gameOver;
-        div.className = "bg-black/40 border border-white/10 rounded-lg p-2 transition " +
-                        (isActive ? "player-active" : "");
+      players.forEach(p => {
+        const div = document.createElement("div");
+        div.className = "bg-black/40 border border-white/10 rounded-lg p-2";
 
         const colorName =
-          p.color === "p1" ? "red" :
-          p.color === "p2" ? "blue" :
-          p.color === "p3" ? "green" : "yellow";
+          p.color === "p1" ? "Red" :
+          p.color === "p2" ? "Blue" :
+          p.color === "p3" ? "Green" : "Yellow";
 
-        const colorDotClass =
+        const colorClass =
           p.color === "p1" ? "bg-red-400" :
           p.color === "p2" ? "bg-blue-400" :
-          p.color === "p3" ? "bg-emerald-400" : "bg-yellow-400";
+          p.color === "p3" ? "bg-emerald-400" : "bg-yellow-300";
 
         div.innerHTML = `
           <p class="font-semibold text-xs">
-            <span class="inline-block w-2 h-2 rounded-full mr-1 ${colorDotClass}"></span>
+            <span class="inline-block w-2 h-2 rounded-full mr-1 ${colorClass}"></span>
             ${p.name} (${colorName})
           </p>
           <p class="text-[11px]">Position: ${p.pos}</p>
@@ -316,43 +302,37 @@
       });
     }
 
-    /* ========== 5. DRAW DOTS ON BOARD ========== */
+    /* ===== 5. DRAW DOTS ON BOARD ===== */
 
     function updateBoardTokens() {
-      document.querySelectorAll('.cell').forEach(c => {
-        c.querySelectorAll('.dot').forEach(d => d.remove());
+      document.querySelectorAll(".cell").forEach(c => {
+        c.querySelectorAll(".dot").forEach(d => d.remove());
       });
 
       players.forEach(p => {
         const cell = cells[p.pos];
         if (!cell) return;
-        const dot = document.createElement('div');
-        dot.className = 'dot ' + p.color;
+        const dot = document.createElement("div");
+        dot.className = "dot " + p.color;
         cell.appendChild(dot);
       });
 
       renderPlayerList();
     }
 
-    /* ========== 6. START GAME ========== */
+    /* ===== 6. START GAME ===== */
 
     function startGame() {
-      const count = Number(playerCountSel.value); // 2–4
-
+      const count = Number(playerCountSel.value); // 2..4
       players = [];
       const colors = ["p1", "p2", "p3", "p4"];
 
       for (let i = 0; i < count; i++) {
         let name;
-        if (i === 0) {
-          name = p1NameInput.value.trim() || "Player 1";
-        } else if (i === 1) {
-          name = p2NameInput.value.trim() || "Player 2";
-        } else if (i === 2) {
-          name = p3NameInput.value.trim() || "Player 3";
-        } else {
-          name = p4NameInput.value.trim() || "Player 4";
-        }
+        if (i === 0)      name = p1NameInput.value.trim() || "Player 1";
+        else if (i === 1) name = p2NameInput.value.trim() || "Player 2";
+        else if (i === 2) name = p3NameInput.value.trim() || "Player 3";
+        else              name = p4NameInput.value.trim() || "Player 4";
 
         players.push({
           name,
@@ -367,13 +347,13 @@
       diceEl.textContent = "-";
       messageEl.textContent = "";
       rollBtn.disabled = false;
-      setupInfoEl.textContent = `Game started with ${players.length} players.`;
 
+      setupInfoEl.textContent = `Game started with ${players.length} players.`;
       updateBoardTokens();
       updateTurnText();
     }
 
-    startBtn.addEventListener('click', startGame);
+    startBtn.addEventListener("click", startGame);
 
     function updateTurnText() {
       if (!players.length) {
@@ -381,119 +361,117 @@
         return;
       }
       const p = players[currentPlayerIndex];
-      if (gameOver) {
-        turnTextEl.textContent = `${p.name} finished the game.`;
-      } else {
-        turnTextEl.textContent = `${p.name}'s turn`;
-      }
-      renderPlayerList();
+      turnTextEl.textContent = `${p.name}'s turn`;
     }
 
-    /* ========== 7. ANIMATED MOVE HELPERS ========== */
+    /* ===== 7. DICE ANIMATION ===== */
 
-    // Animate stepping through each square in "path" array
-    function animatePath(player, path, onDone) {
-      if (path.length === 0) {
-        onDone();
+    function animateDice(finalValue, callback) {
+      diceEl.classList.add("animate");
+      let count = 0;
+      const interval = setInterval(() => {
+        diceEl.textContent = Math.floor(Math.random() * 6) + 1;
+        count++;
+        if (count >= 8) {
+          clearInterval(interval);
+          diceEl.classList.remove("animate");
+          diceEl.textContent = finalValue;
+          callback();
+        }
+      }, 80);
+    }
+
+    /* ===== 8. MOVE ANIMATION ===== */
+
+    function movePlayerAnimated(player, diceValue) {
+      const startPos = player.pos;
+      let target = startPos + diceValue;
+
+      if (target > 100) {
+        messageEl.textContent = `${player.name} rolled too high and stays on ${player.pos}.`;
+        isAnimating = false;
+        nextTurn();
         return;
       }
 
-      isAnimating = true;
-      rollBtn.disabled = true;
+      // Check ladder / snake after reaching target
+      let viaType = null;
+      let viaFrom = null;
+      let finalPos = target;
 
-      let i = 0;
-      const interval = setInterval(() => {
-        player.pos = path[i];
-        updateBoardTokens();
-        i++;
-        if (i >= path.length) {
-          clearInterval(interval);
+      if (ladders[finalPos]) {
+        viaType = "ladder";
+        viaFrom = finalPos;
+        finalPos = ladders[finalPos];
+      } else if (snakes[finalPos]) {
+        viaType = "snake";
+        viaFrom = finalPos;
+        finalPos = snakes[finalPos];
+      }
+
+      const steps = [];
+
+      // move to dice target
+      for (let p = startPos + 1; p <= target; p++) {
+        steps.push(p);
+      }
+
+      // then climb up or slide down
+      if (viaType === "ladder") {
+        for (let p = target + 1; p <= finalPos; p++) steps.push(p);
+      } else if (viaType === "snake") {
+        for (let p = target - 1; p >= finalPos; p--) steps.push(p);
+      }
+
+      let idx = 0;
+
+      function stepOnce() {
+        if (idx >= steps.length) {
+          let msg = `${player.name} moved to ${target}. `;
+          if (viaType === "ladder") {
+            msg += `🪜 Climbed ladder to ${finalPos}. `;
+          } else if (viaType === "snake") {
+            msg += `🐍 Bitten! Slid down to ${finalPos}. `;
+          }
+
+          player.pos = finalPos;
+          updateBoardTokens();
+
+          if (finalPos === 100) {
+            msg += `🏆 ${player.name} wins!`;
+            messageEl.textContent = msg;
+            gameOver = true;
+            rollBtn.disabled = true;
+            isAnimating = false;
+            return;
+          }
+
+          messageEl.textContent = msg;
           isAnimating = false;
-          rollBtn.disabled = false;
-          onDone();
+          nextTurn();
+          return;
         }
-      }, 150); // 150ms per step
+
+        player.pos = steps[idx];
+        updateBoardTokens();
+        idx++;
+        setTimeout(stepOnce, 160); // speed of animation (ms)
+      }
+
+      stepOnce();
     }
 
-    /* ========== 8. MAIN ROLL + DICE ANIMATION ========== */
+    /* ===== 9. ROLL LOGIC ===== */
 
     function rollForCurrentPlayer() {
       if (gameOver || !players.length || isAnimating) return;
 
       const player = players[currentPlayerIndex];
+      const dice = Math.floor(Math.random() * 6) + 1;
 
-      // Dice rolling animation
-      let frames = 12;
-      let count = 0;
-      diceHintEl.textContent = "";
-      rollBtn.disabled = true;
-
-      const anim = setInterval(() => {
-        diceEl.textContent = Math.floor(Math.random() * 6) + 1;
-        count++;
-        if (count >= frames) {
-          clearInterval(anim);
-
-          const dice = Math.floor(Math.random() * 6) + 1; // final roll
-          diceEl.textContent = dice;
-          processMove(player, dice);
-        }
-      }, 60);
-    }
-
-    function processMove(player, dice) {
-      if (gameOver) return;
-
-      let startPos = player.pos;
-      let basePos = startPos + dice;
-
-      if (basePos > 100) {
-        messageEl.textContent = `${player.name} rolled ${dice} but can't move beyond 100. Stays on ${player.pos}.`;
-        nextTurn();
-        return;
-      }
-
-      let finalPos = basePos;
-      let msg = `${player.name} rolled ${dice} and moved to ${basePos}. `;
-
-      if (ladders[basePos]) {
-        const dest = ladders[basePos];
-        msg += `🪜 Ladder from ${basePos} → ${dest}. `;
-        finalPos = dest;
-      }
-
-      if (snakes[basePos]) {
-        const dest = snakes[basePos];
-        msg += `🐍 Snake from ${basePos} → ${dest}. `;
-        finalPos = dest;
-      }
-
-      // Build path for animation: step to basePos, then to finalPos (if different)
-      const path = [];
-
-      for (let p = startPos + 1; p <= basePos; p++) {
-        path.push(p);
-      }
-
-      if (finalPos !== basePos) {
-        const step = finalPos > basePos ? 1 : -1;
-        for (let p = basePos + step; step > 0 ? p <= finalPos : p >= finalPos; p += step) {
-          path.push(p);
-        }
-      }
-
-      animatePath(player, path, () => {
-        messageEl.textContent = msg;
-
-        if (player.pos === 100) {
-          messageEl.textContent = msg + `🏆 ${player.name} wins!`;
-          gameOver = true;
-          rollBtn.disabled = true;
-          updateTurnText();
-          return;
-        }
-
-        nextTurn();
+      isAnimating = true;
+      animateDice(dice, () => {
+        movePlayerAnimated(player, dice);
       });
     }
 
@@ -502,24 +480,23 @@
       updateTurnText();
     }
 
-    rollBtn.addEventListener('click', rollForCurrentPlayer);
+    rollBtn.addEventListener("click", rollForCurrentPlayer);
 
-    /* ========== 9. RESET POSITIONS ========== */
+    /* ===== 10. RESET ===== */
 
     function resetGame() {
-      if (!players.length) return;
       players.forEach(p => p.pos = 1);
       currentPlayerIndex = 0;
       gameOver = false;
       isAnimating = false;
       diceEl.textContent = "-";
       messageEl.textContent = "";
-      rollBtn.disabled = false;
+      rollBtn.disabled = players.length === 0;
       updateBoardTokens();
       updateTurnText();
     }
 
-    resetBtn.addEventListener('click', resetGame);
+    resetBtn.addEventListener("click", resetGame);
   </script>
 </body>
 </html>
