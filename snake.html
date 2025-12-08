@@ -51,20 +51,20 @@
 
     /* climb / slide animation */
     .dot.climb {
-      animation: climbAnim 0.25s infinite alternate;
+      animation: climbAnim 0.3s ease-out forwards;
     }
     .dot.slide {
-      animation: slideAnim 0.25s infinite alternate;
+      animation: slideAnim 0.3s ease-out forwards;
     }
 
     @keyframes climbAnim {
-      0% { transform: translate(-50%, -50%) scale(0.9); }
-      100% { transform: translate(-50%, -50%) scale(1.1); }
+      0% { opacity: 1; }
+      100% { opacity: 1; }
     }
 
     @keyframes slideAnim {
-      0% { transform: translate(-50%, -50%) rotate(-6deg); }
-      100% { transform: translate(-50%, -50%) rotate(6deg); }
+      0% { opacity: 1; }
+      100% { opacity: 1; }
     }
 
     /* ===== DICE (image + animation) ===== */
@@ -472,6 +472,22 @@
 
     /* ===== 10. MOVE ANIMATION ===== */
 
+    // Helper function to get cell coordinates for smooth positioning
+    function getCellCoords(n) {
+      const rowFromBottom = Math.floor((n - 1) / 10);
+      const colInRow = (n - 1) % 10;
+      const isReverse = rowFromBottom % 2 === 1;
+      const col = isReverse ? 9 - colInRow : colInRow;
+      const gridRow = 10 - rowFromBottom;
+      const gridCol = col + 1;
+      
+      // Return pixel coordinates relative to board
+      return {
+        x: (gridCol - 1) * 50 + 25, // center of cell
+        y: (10 - gridRow) * 50 + 25
+      };
+    }
+
     function movePlayerAnimated(player, diceValue) {
       const start = player.pos;
       let target = start + diceValue;
@@ -494,35 +510,49 @@
         finalPos = snakes[target];
       }
 
-      if (viaType) {
-        activeAnimPlayer = player;
-        activeAnimType = viaType;
-      } else {
-        activeAnimPlayer = null;
-        activeAnimType = null;
-      }
+      // First, move through dice roll boxes smoothly
+      const diceRollDuration = (diceValue - 1) * 100; // smooth animation
+      
+      player.pos = target;
+      activeAnimPlayer = player;
+      activeAnimType = null;
+      updateBoardTokens();
 
-      const steps = [];
-      for (let p = start + 1; p <= target; p++) steps.push(p);
+      setTimeout(() => {
+        // Then animate ladder/snake if applicable
+        if (viaType === "ladder" || viaType === "snake") {
+          activeAnimType = viaType;
+          updateBoardTokens(); // Apply climb/slide animation class
+          
+          // Wait for animation to complete
+          setTimeout(() => {
+            activeAnimPlayer = null;
+            activeAnimType = null;
+            player.pos = finalPos;
+            updateBoardTokens();
 
-      if (viaType === "ladder") {
-        for (let p = target + 1; p <= finalPos; p++) steps.push(p);
-      } else if (viaType === "snake") {
-        for (let p = target - 1; p >= finalPos; p--) steps.push(p);
-      }
+            let msg = `${player.name} moved to ${target}. `;
+            if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
+            if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
 
-      let i = 0;
-      function step() {
-        if (i >= steps.length) {
+            if (finalPos === 100) {
+              messageEl.textContent = `🏆 ${player.name} wins!`;
+              gameOver = true;
+              rollBtn.disabled = true;
+              isAnimating = false;
+              showWinner(player.name);
+              return;
+            }
+
+            messageEl.textContent = msg;
+            isAnimating = false;
+            nextTurn();
+          }, 300); // Wait for climb/slide animation
+        } else {
           activeAnimPlayer = null;
           activeAnimType = null;
 
-          player.pos = finalPos;
-          updateBoardTokens();
-
-          let msg = `${player.name} moved to ${target}. `;
-          if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
-          if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
+          let msg = `${player.name} moved to ${target}.`;
 
           if (finalPos === 100) {
             messageEl.textContent = `🏆 ${player.name} wins!`;
@@ -536,15 +566,8 @@
           messageEl.textContent = msg;
           isAnimating = false;
           nextTurn();
-          return;
         }
-
-        player.pos = steps[i++];
-        updateBoardTokens();
-        setTimeout(step, 130);
-      }
-
-      step();
+      }, diceRollDuration);
     }
 
     /* ===== 11. ROLL BUTTON ===== */
