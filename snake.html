@@ -148,7 +148,23 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 text-xs text-slate-200">
+        /* ===== MULTIPLE PAWNS ON ONE SQUARE ===== */
+        .cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        .dot-container {
+          position: absolute;
+          width: 50px;
+          height: 50px;
+          top: 0;
+          left: 0;
+        }
+
+        /* ===== DICE (image + animation) ===== */
           <div id="p1Row">
             <label>Player 1 (Red):
               <input id="p1Name"
@@ -392,6 +408,52 @@
     }
 
     /* ===== 7. START GAME ===== */
+    /* Helper: Get position offsets for multiple pawns */
+    function getPawnPositions(count) {
+      if (count === 1) return [{ x: 0, y: 0 }];
+      if (count === 2) return [{ x: -7, y: 0 }, { x: 7, y: 0 }];
+      if (count === 3) return [{ x: 0, y: -8 }, { x: -8, y: 8 }, { x: 8, y: 8 }]; // triangle
+      if (count >= 4) return [{ x: -7, y: -7 }, { x: 7, y: -7 }, { x: -7, y: 7 }, { x: 7, y: 7 }]; // square
+    }
+
+    function updateBoardTokens() {
+      // Clear old dots
+      document.querySelectorAll(".dot").forEach(d => d.remove());
+
+      // Group players by position
+      const positionMap = {};
+      players.forEach(p => {
+        if (!positionMap[p.pos]) positionMap[p.pos] = [];
+        positionMap[p.pos].push(p);
+      });
+
+      // Render pawns with proper positioning
+      Object.keys(positionMap).forEach(pos => {
+        const pawnsOnCell = positionMap[pos];
+        const cell = cells[pos];
+        if (!cell) return;
+
+        const offsets = getPawnPositions(pawnsOnCell.length);
+
+        pawnsOnCell.forEach((p, idx) => {
+          const dot = document.createElement("div");
+          dot.className = "dot " + p.color;
+
+          const offset = offsets[idx] || { x: 0, y: 0 };
+          dot.style.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
+
+          if (activeAnimPlayer === p && activeAnimType === "ladder") {
+            dot.classList.add("climb");
+          } else if (activeAnimPlayer === p && activeAnimType === "snake") {
+            dot.classList.add("slide");
+          }
+
+          cell.appendChild(dot);
+        });
+      });
+
+      renderPlayerList();
+    }
 
     startBtn.onclick = function () {
       const count = Number(playerCountSel.value);
@@ -488,7 +550,38 @@
       };
     }
 
-    function movePlayerAnimated(player, diceValue) {
+    
+    
+    function smoothMoveToPosition(player, startPos, endPos, duration) {
+      return new Promise((resolve) => {
+        const start = performance.now();
+        
+        function animate(now) {
+          const elapsed = now - start;
+          const progress = Math.min(elapsed / duration, 1);
+          
+          // Smooth easing: ease-in-out
+          const easeProgress = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+          
+          // Interpolate position smoothly
+          const currentPos = startPos + (endPos - startPos) * easeProgress;
+          player.pos = currentPos;
+          updateBoardTokens();
+          
+          if (progress < 1) {
+            requestAnimationFrame(animate);
+          } else {
+            player.pos = Math.round(endPos);
+            updateBoardTokens();
+            resolve();
+          }
+        }
+        
+        requestAnimationFrame(animate);
+      });
+    }
+
+    async function movePlayerAnimated(player, diceValue) {
       const start = player.pos;
       let target = start + diceValue;
 
@@ -510,64 +603,43 @@
         finalPos = snakes[target];
       }
 
-      // First, move through dice roll boxes smoothly
-      const diceRollDuration = (diceValue - 1) * 100; // smooth animation
-      
-      player.pos = target;
-      activeAnimPlayer = player;
-      activeAnimType = null;
+      // Smooth move from start to dice roll position
+      const diceRollDuration = diceValue * 250; // 250ms per step
+      await smoothMoveToPosition(player, start, target, diceRollDuration);
+
+      // If there's a ladder or snake, animate the climb/slide
+      if (viaType) {
+        activeAnimPlayer = player;
+        activeAnimType = viaType;
+        updateBoardTokens();
+        
+        // Smooth animation from target to final position
+        const ladderDuration = Math.abs(finalPos - target) * 200; // 200ms per step
+        await smoothMoveToPosition(player, target, finalPos, ladderDuration);
+        
+        activeAnimPlayer = null;
+        activeAnimType = null;
+      }
+
+      player.pos = finalPos;
       updateBoardTokens();
 
-      setTimeout(() => {
-        // Then animate ladder/snake if applicable
-        if (viaType === "ladder" || viaType === "snake") {
-          activeAnimType = viaType;
-          updateBoardTokens(); // Apply climb/slide animation class
-          
-          // Wait for animation to complete
-          setTimeout(() => {
-            activeAnimPlayer = null;
-            activeAnimType = null;
-            player.pos = finalPos;
-            updateBoardTokens();
+      let msg = `${player.name} moved to ${target}. `;
+      if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
+      else if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
 
-            let msg = `${player.name} moved to ${target}. `;
-            if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
-            if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
+      if (finalPos === 100) {
+        messageEl.textContent = `🏆 ${player.name} wins!`;
+        gameOver = true;
+        rollBtn.disabled = true;
+        isAnimating = false;
+        showWinner(player.name);
+        return;
+      }
 
-            if (finalPos === 100) {
-              messageEl.textContent = `🏆 ${player.name} wins!`;
-              gameOver = true;
-              rollBtn.disabled = true;
-              isAnimating = false;
-              showWinner(player.name);
-              return;
-            }
-
-            messageEl.textContent = msg;
-            isAnimating = false;
-            nextTurn();
-          }, 300); // Wait for climb/slide animation
-        } else {
-          activeAnimPlayer = null;
-          activeAnimType = null;
-
-          let msg = `${player.name} moved to ${target}.`;
-
-          if (finalPos === 100) {
-            messageEl.textContent = `🏆 ${player.name} wins!`;
-            gameOver = true;
-            rollBtn.disabled = true;
-            isAnimating = false;
-            showWinner(player.name);
-            return;
-          }
-
-          messageEl.textContent = msg;
-          isAnimating = false;
-          nextTurn();
-        }
-      }, diceRollDuration);
+      messageEl.textContent = msg;
+      isAnimating = false;
+      nextTurn();
     }
 
     /* ===== 11. ROLL BUTTON ===== */
