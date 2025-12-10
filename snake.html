@@ -54,7 +54,7 @@
     .dot.p3 { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.9); }
     .dot.p4 { background: #eab308; box-shadow: 0 0 10px rgba(234,179,8,0.9); }
 
-    /* climb / slide animation */
+    /* climb / slide animation (visual pulse / wiggle) */
     .dot.climb {
       animation: climbAnim 0.25s infinite alternate;
     }
@@ -278,7 +278,7 @@
     const snakes = {
       98: 55,
       92: 75,
-      82: 59,
+      82: 42, // <- updated as you said
       73: 51,
       56: 19,
       47: 13,
@@ -401,16 +401,16 @@
       if (count === 1) return [{ x: 0, y: 0 }];
       if (count === 2) return [{ x: -7, y: 0 }, { x: 7, y: 0 }];
       if (count === 3) return [
-        { x: 0, y: -8 },
-        { x: -8, y: 8 },
-        { x: 8, y: 8 }
+        { x: 0,  y: -8 },
+        { x: -8, y:  8 },
+        { x: 8,  y:  8 }
       ];
       // 4 or more
       return [
         { x: -7, y: -7 },
-        { x: 7, y: -7 },
-        { x: -7, y: 7 },
-        { x: 7, y: 7 }
+        { x:  7, y: -7 },
+        { x: -7, y:  7 },
+        { x:  7, y:  7 }
       ];
     }
 
@@ -454,7 +454,7 @@
       renderPlayerList();
     }
 
-    /* ===== 7. START GAME ===== */
+    /* ===== 7. TURN TEXT ===== */
 
     function updateTurnText() {
       if (!players.length) {
@@ -463,6 +463,8 @@
       }
       turnTextEl.textContent = `${players[currentPlayerIndex].name}'s turn`;
     }
+
+    /* ===== 8. START GAME ===== */
 
     startBtn.onclick = function () {
       const count = Number(playerCountSel.value);
@@ -508,7 +510,7 @@
       updateTurnText();
     };
 
-    /* ===== 8. DICE ANIMATION ===== */
+    /* ===== 9. DICE ANIMATION ===== */
 
     function animateDice(finalValue, callback) {
       diceWrapper.classList.add("animate");
@@ -526,7 +528,7 @@
       }, 80);
     }
 
-    /* ===== 9. WINNER OVERLAY ===== */
+    /* ===== 10. WINNER OVERLAY ===== */
 
     function showWinner(name) {
       winnerText.textContent = `${name} WINS! 🎉`;
@@ -537,7 +539,55 @@
       winnerOverlay.classList.add("hidden");
     });
 
-    /* ===== 10. MOVE ANIMATION (step-by-step squares) ===== */
+    /* ===== 11. ANIMATION HELPERS (for climbing/sliding) ===== */
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function getCellCenter(pos) {
+      const cell = cells[pos];
+      const rect = cell.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+
+    function animateFloatingToken(player, fromPos, toPos, duration) {
+      return new Promise(resolve => {
+        const from = getCellCenter(fromPos);
+        const to = getCellCenter(toPos);
+
+        const floatDot = document.createElement("div");
+        floatDot.className = "dot " + player.color;
+
+        if (activeAnimType === "ladder") floatDot.classList.add("climb");
+        if (activeAnimType === "snake")  floatDot.classList.add("slide");
+
+        floatDot.style.position = "fixed";
+        floatDot.style.left = (from.x - 9) + "px";
+        floatDot.style.top  = (from.y - 9) + "px";
+        floatDot.style.transform = "translate(0, 0)";
+        floatDot.style.transition =
+          `transform ${duration}ms cubic-bezier(.22,.9,.35,1)`;
+
+        document.body.appendChild(floatDot);
+
+        requestAnimationFrame(() => {
+          const dx = to.x - from.x;
+          const dy = to.y - from.y;
+          floatDot.style.transform = `translate(${dx}px, ${dy}px)`;
+        });
+
+        setTimeout(() => {
+          floatDot.remove();
+          resolve();
+        }, duration + 30);
+      });
+    }
+
+    /* ===== 12. MOVE ANIMATION (walk + climb/slide) ===== */
 
     async function movePlayerAnimated(player, diceValue) {
       const start = player.pos;
@@ -561,60 +611,50 @@
         finalPos = snakes[target];
       }
 
-      const steps = [];
-      for (let p = start + 1; p <= target; p++) steps.push(p);
-
-      if (viaType === "ladder") {
-        for (let p = target + 1; p <= finalPos; p++) steps.push(p);
-      } else if (viaType === "snake") {
-        for (let p = target - 1; p >= finalPos; p--) steps.push(p);
+      // Phase 1: walk square-by-square to target
+      for (let pos = start + 1; pos <= target; pos++) {
+        player.pos = pos;
+        updateBoardTokens();
+        await sleep(120);
       }
 
+      // Phase 2: diagonal climb/slide if needed
       if (viaType) {
         activeAnimPlayer = player;
         activeAnimType = viaType;
-      } else {
+        updateBoardTokens();
+
+        const dist = Math.abs(finalPos - target);
+        const duration = Math.max(300, dist * 120);
+
+        await animateFloatingToken(player, target, finalPos, duration);
+
         activeAnimPlayer = null;
         activeAnimType = null;
-      }
 
-      let i = 0;
-      function step() {
-        if (i >= steps.length) {
-          activeAnimPlayer = null;
-          activeAnimType = null;
-
-          player.pos = finalPos;
-          updateBoardTokens();
-
-          let msg = `${player.name} moved to ${target}. `;
-          if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
-          else if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
-
-          if (finalPos === 100) {
-            messageEl.textContent = `🏆 ${player.name} wins!`;
-            gameOver = true;
-            rollBtn.disabled = true;
-            isAnimating = false;
-            showWinner(player.name);
-            return;
-          }
-
-          messageEl.textContent = msg;
-          isAnimating = false;
-          nextTurn();
-          return;
-        }
-
-        player.pos = steps[i++];
+        player.pos = finalPos;
         updateBoardTokens();
-        setTimeout(step, 130);
       }
 
-      step();
+      let msg = `${player.name} moved to ${target}. `;
+      if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
+      else if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
+
+      if (finalPos === 100) {
+        messageEl.textContent = `🏆 ${player.name} wins!`;
+        gameOver = true;
+        rollBtn.disabled = true;
+        isAnimating = false;
+        showWinner(player.name);
+        return;
+      }
+
+      messageEl.textContent = msg;
+      isAnimating = false;
+      nextTurn();
     }
 
-    /* ===== 11. ROLL BUTTON ===== */
+    /* ===== 13. ROLL BUTTON ===== */
 
     rollBtn.onclick = function () {
       if (gameOver || isAnimating || !players.length) return;
@@ -630,7 +670,7 @@
       updateTurnText();
     }
 
-    /* ===== 12. RESET ===== */
+    /* ===== 14. RESET ===== */
 
     function doReset() {
       players.forEach(p => p.pos = 1);
