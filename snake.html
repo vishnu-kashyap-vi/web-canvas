@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8" />
   <title>Snake & Ladder | V × S</title>
-  <meta charset="UTF-8">
 
-  <!-- PAGE ICON (V × S) -->
-  <link rel="icon" type="image/jpg" href="favicon.jpg">
+  <!-- PAGE ICON -->
+  <link rel="icon" type="image/jpg" href="favicon.jpg" />
 
   <!-- Tailwind for styling -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -24,6 +24,7 @@
       background-position: center;
     }
 
+    /* Each cell on the board */
     .cell {
       width: 50px;
       height: 50px;
@@ -31,6 +32,10 @@
       color: transparent;
       border: 1px solid transparent;
       position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     /* ===== PLAYER TOKENS (centered) ===== */
@@ -51,39 +56,21 @@
 
     /* climb / slide animation */
     .dot.climb {
-      animation: climbAnim 0.3s ease-out forwards;
+      animation: climbAnim 0.25s infinite alternate;
     }
     .dot.slide {
-      animation: slideAnim 0.3s ease-out forwards;
+      animation: slideAnim 0.25s infinite alternate;
     }
 
     @keyframes climbAnim {
-      0% { opacity: 1; }
-      100% { opacity: 1; }
+      0% { transform: translate(-50%, -50%) scale(0.9); }
+      100% { transform: translate(-50%, -50%) scale(1.1); }
     }
 
     @keyframes slideAnim {
-      0% { opacity: 1; }
-      100% { opacity: 1; }
+      0% { transform: translate(-50%, -50%) rotate(-6deg); }
+      100% { transform: translate(-50%, -50%) rotate(6deg); }
     }
-
-    /* Floating token used for pixel-based movement (separate from cell tokens) */
-    .float-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 999px;
-      position: fixed;
-      pointer-events: none;
-      z-index: 60;
-      transform: translate(0,0);
-    }
-    .float-dot.p1 { background: #ef4444; box-shadow: 0 0 10px rgba(239,68,68,0.9); }
-    .float-dot.p2 { background: #60a5fa; box-shadow: 0 0 10px rgba(96,165,250,0.9); }
-    .float-dot.p3 { background: #22c55e; box-shadow: 0 0 10px rgba(34,197,94,0.9); }
-    .float-dot.p4 { background: #eab308; box-shadow: 0 0 10px rgba(234,179,8,0.9); }
-
-    .float-dot.climb { filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
-    .float-dot.slide { filter: drop-shadow(0 6px 8px rgba(0,0,0,0.5)); transform-origin: center; }
 
     /* ===== DICE (image + animation) ===== */
     #diceFace {
@@ -127,22 +114,6 @@
       0% { transform: scale(0.96); text-shadow: 0 0 8px rgba(250,250,210,0.7); }
       100% { transform: scale(1.04); text-shadow: 0 0 18px rgba(250,250,210,1); }
     }
-    
-    /* ===== MULTIPLE PAWNS ON ONE SQUARE ===== */
-    .cell {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .dot-container {
-      position: absolute;
-      width: 50px;
-      height: 50px;
-      top: 0;
-      left: 0;
-    }
   </style>
 </head>
 
@@ -160,7 +131,7 @@
       </h1>
 
       <p class="text-xs text-slate-300 text-center max-w-xs">
-        2–4 players on one device. Red / Blue / Green / Yellow pawns. Animated dice & movement.
+        2–4 players on one device. Red / Blue / Green / Yellow pawns. Animated dice &amp; movement.
       </p>
 
       <div id="board" class="board"></div>
@@ -182,33 +153,33 @@
           </select>
         </div>
 
-        
+        <div class="grid grid-cols-2 gap-2 text-xs text-slate-200">
           <div id="p1Row">
             <label>Player 1 (Red):
               <input id="p1Name"
                      class="mt-1 w-full bg-black/40 border border-red-400/60 rounded px-2 py-1"
-                     placeholder="Player 1">
+                     placeholder="Player 1" />
             </label>
           </div>
           <div id="p2Row">
             <label>Player 2 (Blue):
               <input id="p2Name"
                      class="mt-1 w-full bg-black/40 border border-blue-400/60 rounded px-2 py-1"
-                     placeholder="Player 2">
+                     placeholder="Player 2" />
             </label>
           </div>
           <div id="p3Row">
             <label>Player 3 (Green):
               <input id="p3Name"
                      class="mt-1 w-full bg-black/40 border border-emerald-400/60 rounded px-2 py-1"
-                     placeholder="Player 3">
+                     placeholder="Player 3" />
             </label>
           </div>
           <div id="p4Row">
             <label>Player 4 (Yellow):
               <input id="p4Name"
                      class="mt-1 w-full bg-black/40 border border-yellow-400/60 rounded px-2 py-1"
-                     placeholder="Player 4">
+                     placeholder="Player 4" />
             </label>
           </div>
         </div>
@@ -264,7 +235,7 @@
          class="text-4xl md:text-5xl font-extrabold text-yellow-300 drop-shadow-lg mb-4">
       </p>
       <p class="text-sm md:text-lg text-slate-100">
-        Click anywhere to play again.
+        Click anywhere to close.
       </p>
     </div>
   </div>
@@ -273,10 +244,18 @@
   <div id="resetOverlay" class="hidden fixed inset-0 z-50 flex items-center justify-center">
     <div class="bg-black/80 rounded-lg p-6 text-center max-w-sm mx-4">
       <p class="text-lg font-semibold text-white mb-4">Restart game?</p>
-      <p class="text-sm text-slate-300 mb-6">This will reset all player positions. Are you sure?</p>
+      <p class="text-sm text-slate-300 mb-6">
+        This will reset all player positions. Are you sure?
+      </p>
       <div class="flex gap-3 justify-center">
-        <button id="confirmReset" class="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-white">Yes, restart</button>
-        <button id="cancelReset" class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-white">Cancel</button>
+        <button id="confirmReset"
+                class="px-4 py-2 rounded bg-red-600 hover:bg-red-500 text-white">
+          Yes, restart
+        </button>
+        <button id="cancelReset"
+                class="px-4 py-2 rounded bg-slate-700 hover:bg-slate-600 text-white">
+          Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -337,37 +316,39 @@
     let gameOver = false;
     let isAnimating = false;
     let activeAnimPlayer = null;
-    let activeAnimType = null;
-    // Tracks players currently represented by a floating token (so we don't render cell tokens for them)
-    const animatingPlayers = new Set();
+    let activeAnimType = null; // "ladder" | "snake" | null
 
     /* ===== 3. DOM ELEMENTS ===== */
 
     const playerCountSel = document.getElementById("playerCount");
-    const p1NameInput    = document.getElementById("p1Name");
-    const p2NameInput    = document.getElementById("p2Name");
-    const p3NameInput    = document.getElementById("p3Name");
-    const p4NameInput    = document.getElementById("p4Name");
+    const p1NameInput = document.getElementById("p1Name");
+    const p2NameInput = document.getElementById("p2Name");
+    const p3NameInput = document.getElementById("p3Name");
+    const p4NameInput = document.getElementById("p4Name");
 
-    const p1Row          = document.getElementById("p1Row");
-    const p2Row          = document.getElementById("p2Row");
-    const p3Row          = document.getElementById("p3Row");
-    const p4Row          = document.getElementById("p4Row");
+    const p1Row = document.getElementById("p1Row");
+    const p2Row = document.getElementById("p2Row");
+    const p3Row = document.getElementById("p3Row");
+    const p4Row = document.getElementById("p4Row");
 
-    const startBtn       = document.getElementById("startBtn");
-    const setupInfoEl    = document.getElementById("setupInfo");
+    const startBtn = document.getElementById("startBtn");
+    const setupInfoEl = document.getElementById("setupInfo");
 
-    const turnTextEl   = document.getElementById("turnText");
-    const diceWrapper  = document.getElementById("diceWrapper");
-    const diceFace     = document.getElementById("diceFace");
-    const diceValueEl  = document.getElementById("diceValue");
+    const turnTextEl = document.getElementById("turnText");
+    const diceWrapper = document.getElementById("diceWrapper");
+    const diceFace = document.getElementById("diceFace");
+    const diceValueEl = document.getElementById("diceValue");
     const playerListEl = document.getElementById("playerList");
-    const rollBtn      = document.getElementById("rollBtn");
-    const resetBtn     = document.getElementById("resetBtn");
-    const messageEl    = document.getElementById("message");
+    const rollBtn = document.getElementById("rollBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const messageEl = document.getElementById("message");
 
     const winnerOverlay = document.getElementById("winnerOverlay");
-    const winnerText    = document.getElementById("winnerText");
+    const winnerText = document.getElementById("winnerText");
+
+    const resetOverlay = document.getElementById("resetOverlay");
+    const confirmResetBtn = document.getElementById("confirmReset");
+    const cancelResetBtn = document.getElementById("cancelReset");
 
     /* ===== helper: dice image ===== */
     function setDiceFace(v) {
@@ -408,47 +389,57 @@
             <span class="inline-block w-2 h-2 rounded-full mr-1 ${colorClass}"></span>
             ${p.name}
           </p>
+          <p class="text-[11px]">Position: ${p.pos}</p>
         `;
         playerListEl.appendChild(div);
       });
     }
 
-    /* ===== 6. DRAW TOKENS ===== */
-    /* Helper: Get position offsets for multiple pawns */
-    function getPawnPositions(count) {
+    /* ===== 6. MULTIPLE PAWNS ON SAME CELL ===== */
+
+    function getPawnOffsets(count) {
       if (count === 1) return [{ x: 0, y: 0 }];
       if (count === 2) return [{ x: -7, y: 0 }, { x: 7, y: 0 }];
-      if (count === 3) return [{ x: 0, y: -8 }, { x: -8, y: 8 }, { x: 8, y: 8 }]; // triangle
-      if (count >= 4) return [{ x: -7, y: -7 }, { x: 7, y: -7 }, { x: -7, y: 7 }, { x: 7, y: 7 }]; // square
+      if (count === 3) return [
+        { x: 0, y: -8 },
+        { x: -8, y: 8 },
+        { x: 8, y: 8 }
+      ];
+      // 4 or more
+      return [
+        { x: -7, y: -7 },
+        { x: 7, y: -7 },
+        { x: -7, y: 7 },
+        { x: 7, y: 7 }
+      ];
     }
 
     function updateBoardTokens() {
-      // Clear old dots
+      // remove old dots
       document.querySelectorAll(".dot").forEach(d => d.remove());
 
-      // Group players by position
+      // group players by cell
       const positionMap = {};
       players.forEach(p => {
-        // skip players that are currently animated with floating tokens
-        if (animatingPlayers.has(p.name + '|' + p.color)) return;
         if (!positionMap[p.pos]) positionMap[p.pos] = [];
         positionMap[p.pos].push(p);
       });
 
-      // Render pawns with proper positioning
-      Object.keys(positionMap).forEach(pos => {
+      Object.keys(positionMap).forEach(posStr => {
+        const pos = Number(posStr);
         const pawnsOnCell = positionMap[pos];
         const cell = cells[pos];
         if (!cell) return;
 
-        const offsets = getPawnPositions(pawnsOnCell.length);
+        const offsets = getPawnOffsets(pawnsOnCell.length);
 
         pawnsOnCell.forEach((p, idx) => {
           const dot = document.createElement("div");
           dot.className = "dot " + p.color;
 
           const offset = offsets[idx] || { x: 0, y: 0 };
-          dot.style.transform = `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
+          dot.style.transform =
+            `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
 
           if (activeAnimPlayer === p && activeAnimType === "ladder") {
             dot.classList.add("climb");
@@ -463,6 +454,16 @@
       renderPlayerList();
     }
 
+    /* ===== 7. START GAME ===== */
+
+    function updateTurnText() {
+      if (!players.length) {
+        turnTextEl.textContent = 'Click "Start game" to begin';
+        return;
+      }
+      turnTextEl.textContent = `${players[currentPlayerIndex].name}'s turn`;
+    }
+
     startBtn.onclick = function () {
       const count = Number(playerCountSel.value);
       const rawNames = [
@@ -472,6 +473,7 @@
         p4NameInput.value.trim()
       ];
       const needed = rawNames.slice(0, count);
+
       if (needed.some(n => !n)) {
         setupInfoEl.textContent = "Giving name is mandatory.";
         setupInfoEl.classList.remove("text-slate-300");
@@ -499,20 +501,12 @@
       setupInfoEl.textContent = "Game started!";
       winnerOverlay.classList.add("hidden");
 
-      // lock player count once the game has started
+      // lock player count while game running
       playerCountSel.disabled = true;
 
       updateBoardTokens();
       updateTurnText();
     };
-
-    function updateTurnText() {
-      if (!players.length) {
-        turnTextEl.textContent = 'Click "Start game" to begin';
-        return;
-      }
-      turnTextEl.textContent = `${players[currentPlayerIndex].name}'s turn`;
-    }
 
     /* ===== 8. DICE ANIMATION ===== */
 
@@ -543,95 +537,7 @@
       winnerOverlay.classList.add("hidden");
     });
 
-    // Reset confirmation overlay elements
-    const resetOverlay = document.getElementById("resetOverlay");
-    const confirmResetBtn = document.getElementById("confirmReset");
-    const cancelResetBtn = document.getElementById("cancelReset");
-
-    function doReset() {
-      players.forEach(p => p.pos = 1);
-      currentPlayerIndex = 0;
-      gameOver = false;
-      isAnimating = false;
-      activeAnimPlayer = null;
-      activeAnimType = null;
-      setDiceFace(1);
-      messageEl.textContent = "";
-      rollBtn.disabled = players.length === 0;
-      winnerOverlay.classList.add("hidden");
-      resetOverlay.classList.add("hidden");
-      // Re-enable changing number of players after reset
-      playerCountSel.disabled = false;
-      updateBoardTokens();
-      updateTurnText();
-    }
-
-    confirmResetBtn.addEventListener('click', () => {
-      doReset();
-    });
-
-    cancelResetBtn.addEventListener('click', () => {
-      resetOverlay.classList.add('hidden');
-    });
-
-    /* ===== 10. MOVE ANIMATION ===== */
-
-    // Helper function to get cell coordinates for smooth positioning
-    function getCellCoords(n) {
-      const rowFromBottom = Math.floor((n - 1) / 10);
-      const colInRow = (n - 1) % 10;
-      const isReverse = rowFromBottom % 2 === 1;
-      const col = isReverse ? 9 - colInRow : colInRow;
-      const gridRow = 10 - rowFromBottom;
-      const gridCol = col + 1;
-      
-      // Return pixel coordinates relative to board
-      return {
-        x: (gridCol - 1) * 50 + 25, // center of cell
-        y: (10 - gridRow) * 50 + 25
-      };
-    }
-
-    
-    
-    // Animate a floating token across the board (pixel-based) and place it in the destination cell.
-    function animateFloatingToken(player, fromCell, toCell, duration, animClass) {
-      return new Promise((resolve) => {
-        const boardRect = boardElement.getBoundingClientRect();
-
-        const from = getCellCoords(fromCell);
-        const to = getCellCoords(toCell);
-
-        // Create floating token
-        const floatDot = document.createElement('div');
-        floatDot.className = 'float-dot ' + player.color + (animClass ? ' ' + animClass : '');
-        floatDot.style.left = (boardRect.left + from.x - 9) + 'px';
-        floatDot.style.top = (boardRect.top + from.y - 9) + 'px';
-        floatDot.style.transition = `transform ${duration}ms cubic-bezier(.22,.9,.35,1), opacity 120ms linear`;
-        floatDot.style.opacity = '1';
-        // mark player as animating so we hide their cell token
-        animatingPlayers.add(player.name + '|' + player.color);
-        document.body.appendChild(floatDot);
-
-        // Force reflow then animate using transform to target
-        requestAnimationFrame(() => {
-          const targetX = boardRect.left + to.x - 9;
-          const targetY = boardRect.top + to.y - 9;
-          const dx = targetX - (boardRect.left + from.x - 9);
-          const dy = targetY - (boardRect.top + from.y - 9);
-          floatDot.style.transform = `translate(${dx}px, ${dy}px)`;
-        });
-
-        // Cleanup after duration
-        setTimeout(() => {
-          // fade out slightly before removing for smoother finish
-          floatDot.style.opacity = '0';
-          setTimeout(() => { floatDot.remove();
-            animatingPlayers.delete(player.name + '|' + player.color);
-            resolve(); }, 120);
-        }, duration + 20);
-      });
-    }
+    /* ===== 10. MOVE ANIMATION (step-by-step squares) ===== */
 
     async function movePlayerAnimated(player, diceValue) {
       const start = player.pos;
@@ -655,46 +561,57 @@
         finalPos = snakes[target];
       }
 
-      // Phase 1: animate from start cell to target cell (dice roll)
-      const diceRollDuration = Math.max(200, diceValue * 180); // ms
-      await animateFloatingToken(player, Math.round(start), target, diceRollDuration, null);
+      const steps = [];
+      for (let p = start + 1; p <= target; p++) steps.push(p);
 
-      // Place player at target for a moment
-      player.pos = target;
-      updateBoardTokens();
+      if (viaType === "ladder") {
+        for (let p = target + 1; p <= finalPos; p++) steps.push(p);
+      } else if (viaType === "snake") {
+        for (let p = target - 1; p >= finalPos; p--) steps.push(p);
+      }
 
-      // Phase 2: ladder or snake animation uses animClass for visual effect
       if (viaType) {
         activeAnimPlayer = player;
         activeAnimType = viaType;
-        updateBoardTokens();
-
-        const ladderDuration = Math.max(300, Math.abs(finalPos - target) * 160);
-        await animateFloatingToken(player, target, finalPos, ladderDuration, viaType === 'ladder' ? 'climb' : 'slide');
-
+      } else {
         activeAnimPlayer = null;
         activeAnimType = null;
+      }
 
-        player.pos = finalPos;
+      let i = 0;
+      function step() {
+        if (i >= steps.length) {
+          activeAnimPlayer = null;
+          activeAnimType = null;
+
+          player.pos = finalPos;
+          updateBoardTokens();
+
+          let msg = `${player.name} moved to ${target}. `;
+          if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
+          else if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
+
+          if (finalPos === 100) {
+            messageEl.textContent = `🏆 ${player.name} wins!`;
+            gameOver = true;
+            rollBtn.disabled = true;
+            isAnimating = false;
+            showWinner(player.name);
+            return;
+          }
+
+          messageEl.textContent = msg;
+          isAnimating = false;
+          nextTurn();
+          return;
+        }
+
+        player.pos = steps[i++];
         updateBoardTokens();
+        setTimeout(step, 130);
       }
 
-      let msg = `${player.name} moved to ${target}. `;
-      if (viaType === "ladder") msg += `🪜 Climbed to ${finalPos}.`;
-      else if (viaType === "snake") msg += `🐍 Slid to ${finalPos}.`;
-
-      if (finalPos === 100) {
-        messageEl.textContent = `🏆 ${player.name} wins!`;
-        gameOver = true;
-        rollBtn.disabled = true;
-        isAnimating = false;
-        showWinner(player.name);
-        return;
-      }
-
-      messageEl.textContent = msg;
-      isAnimating = false;
-      nextTurn();
+      step();
     }
 
     /* ===== 11. ROLL BUTTON ===== */
@@ -715,9 +632,33 @@
 
     /* ===== 12. RESET ===== */
 
+    function doReset() {
+      players.forEach(p => p.pos = 1);
+      currentPlayerIndex = 0;
+      gameOver = false;
+      isAnimating = false;
+      activeAnimPlayer = null;
+      activeAnimType = null;
+      setDiceFace(1);
+      messageEl.textContent = "";
+      rollBtn.disabled = players.length === 0;
+      winnerOverlay.classList.add("hidden");
+      resetOverlay.classList.add("hidden");
+      playerCountSel.disabled = false;
+      updateBoardTokens();
+      updateTurnText();
+    }
+
     resetBtn.onclick = function () {
-      // Show confirmation overlay before resetting
-      resetOverlay.classList.remove('hidden');
+      resetOverlay.classList.remove("hidden");
+    };
+
+    confirmResetBtn.onclick = function () {
+      doReset();
+    };
+
+    cancelResetBtn.onclick = function () {
+      resetOverlay.classList.add("hidden");
     };
   </script>
 </body>
