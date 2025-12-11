@@ -97,13 +97,9 @@
       100% { transform: translate(0, 0) rotate(0deg); }
     }
 
-    /* ===== WINNER OVERLAY ===== */
+    /* ===== WINNER OVERLAY (black background) ===== */
     #winnerOverlay {
-      background-image:
-        radial-gradient(circle at 10% 20%, rgba(249,115,22,0.5), transparent 60%),
-        radial-gradient(circle at 80% 30%, rgba(56,189,248,0.5), transparent 60%),
-        radial-gradient(circle at 50% 80%, rgba(190,242,100,0.5), transparent 60%),
-        rgba(0,0,0,0.85);
+      background-color: rgba(0, 0, 0, 0.96);
     }
 
     #winnerText {
@@ -278,7 +274,7 @@
     const snakes = {
       98: 55,
       92: 75,
-      82: 42, // <- updated as you said
+      82: 42, // fixed
       73: 51,
       56: 19,
       47: 13,
@@ -315,8 +311,8 @@
     let currentPlayerIndex = 0;
     let gameOver = false;
     let isAnimating = false;
-    let activeAnimPlayer = null;
-    let activeAnimType = null; // "ladder" | "snake" | null
+    let activeAnimPlayer = null; // player object or null
+    let activeAnimType = null;   // "ladder" | "snake" | null
 
     /* ===== 3. DOM ELEMENTS ===== */
 
@@ -434,18 +430,15 @@
         const offsets = getPawnOffsets(pawnsOnCell.length);
 
         pawnsOnCell.forEach((p, idx) => {
+          // skip drawing pawn that is currently animating (ladder/snake)
+          if (activeAnimPlayer === p) return;
+
           const dot = document.createElement("div");
           dot.className = "dot " + p.color;
 
           const offset = offsets[idx] || { x: 0, y: 0 };
           dot.style.transform =
             `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px))`;
-
-          if (activeAnimPlayer === p && activeAnimType === "ladder") {
-            dot.classList.add("climb");
-          } else if (activeAnimPlayer === p && activeAnimType === "snake") {
-            dot.classList.add("slide");
-          }
 
           cell.appendChild(dot);
         });
@@ -624,9 +617,7 @@
         activeAnimType = viaType;
         updateBoardTokens();
 
-        const dist = Math.abs(finalPos - target);
-        const duration = Math.max(300, dist * 120);
-
+        const duration = 500; // faster climb/slide
         await animateFloatingToken(player, target, finalPos, duration);
 
         activeAnimPlayer = null;
